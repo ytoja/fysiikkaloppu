@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fysiikka-peli</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#080c14;--surface:#0e1520;--surface2:#141d2e;--border:rgba(255,255,255,0.07);--cyan:#00e5ff;--pink:#ff3eb5;--yellow:#ffe44d;--green:#00ff88;--red:#ff4444;--text:#e8edf5;--muted:#5a6a82;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(0,229,255,0.04) 0%,transparent 50%),radial-gradient(ellipse at 80% 20%,rgba(255,62,181,0.04) 0%,transparent 50%);pointer-events:none;z-index:0;}
+  .stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+  .star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite var(--delay,0s);}
+  @keyframes twinkle{0%,100%{opacity:0.1;}50%{opacity:0.6;}}
+  h1,h2,h3,h4{font-family:'Syne',sans-serif;}
+  .screen{display:none;min-height:100vh;position:relative;z-index:1;}
+  .screen.active{display:flex;flex-direction:column;}
+  #home{align-items:center;justify-content:center;padding:2rem;}
+  .logo-wrap{text-align:center;margin-bottom:2.5rem;}
+  .logo-icon{font-size:4rem;margin-bottom:0.75rem;display:block;animation:float 4s ease-in-out infinite;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+  .logo-title{font-size:clamp(3rem,8vw,5rem);font-weight:800;letter-spacing:-2px;background:linear-gradient(135deg,var(--cyan),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  .logo-sub{color:var(--muted);font-size:0.9rem;letter-spacing:4px;text-transform:uppercase;margin-top:0.5rem;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2rem;width:100%;max-width:420px;}
+  .card-title{font-size:1.2rem;font-weight:700;margin-bottom:1.5rem;text-align:center;}
+  .btn{display:flex;align-items:center;justify-content:center;gap:0.5rem;width:100%;padding:1rem 1.5rem;border-radius:12px;border:none;font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.2s;}
+  .btn-primary{background:var(--cyan);color:#000;}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,229,255,0.35);}
+  .btn-secondary{background:transparent;color:var(--pink);border:2px solid var(--pink);}
+  .btn-secondary:hover{background:rgba(255,62,181,0.1);transform:translateY(-2px);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:rgba(255,255,255,0.2);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+  .input{width:100%;padding:0.9rem 1.2rem;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:1rem;transition:border-color 0.2s;outline:none;}
+  .input:focus{border-color:var(--cyan);}
+  .input-mono{font-family:'Syne',sans-serif;font-size:1.4rem;letter-spacing:4px;text-align:center;text-transform:uppercase;}
+  .stack{display:flex;flex-direction:column;gap:0.75rem;}
+  .row{display:flex;gap:0.75rem;}
+  .mode-btn{flex:1;padding:1.5rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.2s;text-align:center;color:var(--text);}
+  .mode-btn:hover{border-color:var(--cyan);background:rgba(0,229,255,0.05);}
+  .mode-btn .mode-icon{font-size:2rem;margin-bottom:0.5rem;}
+  .mode-btn .mode-label{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;}
+  .mode-btn .mode-desc{font-size:0.8rem;color:var(--muted);margin-top:0.25rem;}
+  .code-box{background:rgba(0,229,255,0.05);border:2px solid rgba(0,229,255,0.3);border-radius:16px;padding:1.5rem;text-align:center;margin:1rem 0;}
+  .code-display{font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;color:var(--cyan);letter-spacing:4px;}
+  .code-hint{font-size:0.8rem;color:var(--muted);margin-top:0.5rem;}
+  .copy-btn{margin-top:1rem;padding:0.6rem 1.5rem;background:rgba(0,229,255,0.15);border:1px solid rgba(0,229,255,0.3);border-radius:8px;color:var(--cyan);font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;cursor:pointer;transition:all 0.2s;}
+  .copy-btn:hover{background:rgba(0,229,255,0.25);}
+  .game-header{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,12,20,0.8);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;}
+  .header-player{display:flex;align-items:center;gap:0.75rem;}
+  .avatar{width:36px;height:36px;border-radius:50%;background:rgba(0,229,255,0.15);border:2px solid rgba(0,229,255,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;color:var(--cyan);font-size:0.9rem;}
+  .player-name{font-weight:600;font-size:0.9rem;}
+  .player-code{font-size:0.75rem;color:var(--muted);}
+  .xp-badge{background:rgba(255,228,77,0.1);border:1px solid rgba(255,228,77,0.3);border-radius:20px;padding:0.4rem 1rem;display:flex;align-items:center;gap:0.4rem;font-family:'Syne',sans-serif;font-weight:700;color:var(--yellow);font-size:0.9rem;}
+  .logout-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:0.25rem;transition:color 0.2s;}
+  .logout-btn:hover{color:var(--red);}
+  #map{padding:6rem 1.5rem 3rem;}
+  .map-title{text-align:center;margin-bottom:0.5rem;font-size:clamp(1.8rem,5vw,2.5rem);font-weight:800;}
+  .map-sub{text-align:center;color:var(--muted);margin-bottom:3rem;font-size:0.9rem;}
+  .topics-grid{display:flex;flex-direction:column;gap:1rem;max-width:600px;margin:0 auto;}
+  .topic-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;display:flex;align-items:center;gap:1.25rem;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;}
+  .topic-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity 0.25s;background:var(--glow,rgba(0,229,255,0.05));}
+  .topic-card:hover:not(.locked)::before{opacity:1;}
+  .topic-card:hover:not(.locked){transform:translateX(6px);border-color:rgba(255,255,255,0.15);}
+  .topic-card.locked{opacity:0.4;cursor:not-allowed;}
+  .topic-card.completed{border-color:rgba(0,255,136,0.3);}
+  .topic-emoji{font-size:2.5rem;width:56px;text-align:center;flex-shrink:0;}
+  .topic-info{flex:1;}
+  .topic-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;margin-bottom:0.2rem;}
+  .topic-desc{font-size:0.85rem;color:var(--muted);}
+  .topic-status{font-size:1.5rem;flex-shrink:0;}
+  .topic-xp{font-size:0.8rem;color:var(--yellow);margin-top:0.25rem;}
+  .exam-card{max-width:600px;margin:2rem auto 0;background:var(--surface);border:2px solid rgba(255,62,181,0.3);border-radius:20px;padding:2rem;text-align:center;}
+  .exam-card.locked-exam{opacity:0.5;}
+  .exam-title{font-size:1.5rem;font-weight:800;margin-bottom:0.5rem;}
+  .exam-desc{color:var(--muted);font-size:0.9rem;margin-bottom:1.5rem;}
+  #theory{padding:5rem 1.5rem 3rem;}
+  .theory-inner{max-width:640px;margin:0 auto;}
+  .theory-header{text-align:center;margin-bottom:2rem;}
+  .theory-emoji{font-size:4rem;margin-bottom:1rem;display:block;}
+  .theory-title{font-size:clamp(1.5rem,4vw,2rem);font-weight:800;margin-bottom:0.5rem;}
+  .theory-badge{display:inline-block;padding:0.3rem 1rem;border-radius:20px;font-size:0.75rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;}
+  .theory-content{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.75rem;margin-bottom:1.25rem;}
+  .theory-content p{color:rgba(232,237,245,0.85);line-height:1.75;margin-bottom:0.75rem;font-size:0.95rem;}
+  .theory-content p:last-child{margin-bottom:0;}
+  .theory-img{width:100%;max-height:200px;object-fit:contain;border-radius:12px;margin:0.75rem 0;background:rgba(255,255,255,0.03);padding:0.5rem;border:1px solid var(--border);}
+  .img-caption{font-size:0.75rem;color:var(--muted);text-align:center;margin-bottom:0.75rem;}
+  .keypoints{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.75rem;}
+  .keypoints h3{font-size:0.75rem;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:1rem;}
+  .keypoint{display:flex;gap:0.75rem;align-items:flex-start;margin-bottom:0.75rem;}
+  .keypoint:last-child{margin-bottom:0;}
+  .kp-num{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:0.75rem;flex-shrink:0;margin-top:1px;}
+  .kp-text{font-size:0.9rem;color:rgba(232,237,245,0.85);line-height:1.5;}
+  #questions{padding:5rem 1.5rem 3rem;}
+  .q-inner{max-width:640px;margin:0 auto;}
+  .progress-bar{height:4px;background:var(--surface2);border-radius:2px;margin-bottom:2rem;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:2px;transition:width 0.4s ease;background:var(--cyan);}
+  .q-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;}
+  .q-counter{font-size:0.85rem;color:var(--muted);}
+  .q-xp{font-family:'Syne',sans-serif;font-weight:700;color:var(--yellow);font-size:0.9rem;}
+  .streak-badge{background:rgba(255,228,77,0.1);border:1px solid rgba(255,228,77,0.3);border-radius:20px;padding:0.3rem 0.75rem;font-size:0.8rem;color:var(--yellow);font-weight:600;}
+  .q-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.75rem;margin-bottom:1.5rem;}
+  .q-type-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:0.75rem;}
+  .q-img{width:100%;max-height:180px;object-fit:contain;border-radius:12px;margin:0.75rem 0;background:rgba(255,255,255,0.03);padding:0.5rem;border:1px solid var(--border);}
+  .q-text{font-size:clamp(1rem,2.5vw,1.15rem);line-height:1.65;font-weight:500;}
+  .answers{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;}
+  .ans-btn{padding:1rem 1.25rem;background:var(--surface2);border:2px solid var(--border);border-radius:14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:500;cursor:pointer;transition:all 0.2s;text-align:left;line-height:1.4;}
+  .ans-btn:hover:not(:disabled){border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);}
+  .ans-btn.selected{border-color:var(--cyan);background:rgba(0,229,255,0.1);}
+  .ans-btn.correct{border-color:var(--green);background:rgba(0,255,136,0.1);color:var(--green);}
+  .ans-btn.wrong{border-color:var(--red);background:rgba(255,68,68,0.1);color:var(--red);opacity:0.7;}
+  .ans-btn.dim{opacity:0.35;}
+  .feedback{border-radius:16px;padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;margin-top:0.75rem;}
+  .feedback.correct-fb{background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.25);}
+  .feedback.wrong-fb{background:rgba(255,68,68,0.08);border:1px solid rgba(255,68,68,0.25);}
+  .fb-header{display:flex;align-items:center;gap:0.5rem;font-family:'Syne',sans-serif;font-weight:700;}
+  .fb-correct{color:var(--green);}
+  .fb-wrong{color:var(--red);}
+  .fb-text{font-size:0.9rem;color:rgba(232,237,245,0.8);line-height:1.5;}
+  .match-btn{padding:0.85rem;background:var(--surface2);border:2px solid var(--border);border-radius:12px;color:var(--text);font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.2s;text-align:center;line-height:1.3;}
+  .match-btn:hover:not(:disabled){border-color:rgba(255,255,255,0.2);}
+  .match-btn.selected{border-color:var(--cyan);background:rgba(0,229,255,0.1);color:var(--cyan);}
+  .match-btn.matched{border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.03);opacity:0.6;}
+  .match-btn.correct{border-color:var(--green);background:rgba(0,255,136,0.1);color:var(--green);}
+  .match-btn.wrong{border-color:var(--red);background:rgba(255,68,68,0.1);color:var(--red);}
+  #topic-done{align-items:center;justify-content:center;padding:2rem;}
+  .done-card{text-align:center;max-width:420px;width:100%;}
+  .stars-row{display:flex;justify-content:center;gap:0.5rem;margin-bottom:1.5rem;}
+  .star-icon{font-size:3rem;}
+  .star-icon.lit{animation:starPop 0.4s ease backwards;}
+  @keyframes starPop{0%{transform:scale(0) rotate(-180deg);}80%{transform:scale(1.2);}100%{transform:scale(1);}}
+  .done-title{font-size:2rem;font-weight:800;margin-bottom:0.5rem;}
+  .done-score{font-size:1.1rem;color:var(--muted);margin-bottom:1.5rem;}
+  .xp-earned{background:rgba(255,228,77,0.08);border:1px solid rgba(255,228,77,0.25);border-radius:16px;padding:1.25rem;margin-bottom:1.5rem;}
+  .xp-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:0.25rem;}
+  .xp-value{font-family:'Syne',sans-serif;font-size:3rem;font-weight:800;color:var(--yellow);}
+  #exam{padding:5rem 1.5rem 3rem;}
+  .exam-inner{max-width:640px;margin:0 auto;}
+  .timer{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;padding:0.5rem 1.25rem;border-radius:10px;background:var(--surface2);border:1px solid var(--border);}
+  .timer.urgent{color:var(--red);border-color:rgba(255,68,68,0.4);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
+  #results{padding:5rem 1.5rem 3rem;}
+  .results-inner{max-width:640px;margin:0 auto;}
+  .results-hero{text-align:center;margin-bottom:2rem;}
+  .score-circle{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:160px;height:160px;border-radius:50%;border:3px solid var(--cyan);background:rgba(0,229,255,0.05);margin:1rem auto;box-shadow:0 0 40px rgba(0,229,255,0.2);}
+  .score-pct{font-family:'Syne',sans-serif;font-size:3rem;font-weight:800;color:var(--cyan);line-height:1;}
+  .score-sub{font-size:0.8rem;color:var(--muted);}
+  .report-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:1.25rem;}
+  .report-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .report-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;}
+  .report-pre{padding:1.5rem;font-family:'DM Sans',sans-serif;font-size:0.88rem;line-height:1.7;color:rgba(232,237,245,0.85);white-space:pre-wrap;user-select:all;background:rgba(0,0,0,0.2);}
+  .copy-report-btn{padding:0.5rem 1.25rem;background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.3);border-radius:8px;color:var(--cyan);font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s;}
+  .copy-report-btn:hover{background:rgba(0,229,255,0.2);}
+  .copy-report-btn.copied{background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.3);color:var(--green);}
+  .topic-results{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.25rem;}
+  .tr-title{font-size:0.75rem;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:1rem;}
+  .tr-row{display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--border);}
+  .tr-row:last-child{border-bottom:none;}
+  .tr-xp{font-family:'Syne',sans-serif;font-weight:700;color:var(--yellow);}
+  .tr-total{display:flex;justify-content:space-between;padding-top:0.75rem;font-weight:700;}
+  .error{color:var(--red);font-size:0.85rem;text-align:center;margin-top:0.5rem;}
+  .hidden{display:none!important;}
+  .mt-1{margin-top:0.5rem;}.mt-2{margin-top:1rem;}.mt-3{margin-top:1.5rem;}
+  .back-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0.5rem 0;display:flex;align-items:center;gap:0.4rem;transition:color 0.2s;}
+  .back-btn:hover{color:var(--text);}
+  @media(max-width:480px){.answers{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="stars" id="stars"></div>
+
+<div id="home" class="screen active">
+  <div class="logo-wrap">
+    <span class="logo-icon">🚀</span>
+    <h1 class="logo-title">FYSIIKKA</h1>
+    <p class="logo-sub">Oppimispeli</p>
+  </div>
+  <div class="card" id="home-choose">
+    <p class="card-title">Tervetuloa!</p>
+    <div class="row">
+      <button class="mode-btn" onclick="showNewGame()"><div class="mode-icon">✨</div><div class="mode-label">Uusi peli</div><div class="mode-desc">Aloita alusta</div></button>
+      <button class="mode-btn" onclick="showResume()"><div class="mode-icon">🔑</div><div class="mode-label">Jatka peliä</div><div class="mode-desc">Syötä koodi</div></button>
+    </div>
+  </div>
+  <div class="card hidden" id="home-new">
+    <button class="back-btn" onclick="showChoose()">← Takaisin</button>
+    <p class="card-title mt-2">Uusi peli</p>
+    <div class="stack">
+      <input class="input" id="name-input" placeholder="Sankarisi nimi..." maxlength="20">
+      <button class="btn btn-primary" onclick="startNewGame()">Luo hahmo</button>
+    </div>
+  </div>
+  <div class="card hidden" id="home-code">
+    <p class="card-title">⚠️ Tallenna koodi!</p>
+    <p style="font-size:0.85rem;color:var(--muted);text-align:center;margin-bottom:0.5rem;">Tarvitset tätä koodia jos haluat jatkaa peliä myöhemmin.</p>
+    <div class="code-box">
+      <div class="code-display" id="code-display">FYS-AB234</div>
+      <div class="code-hint">Kirjoita muistiin tai kopioi</div>
+      <button class="copy-btn" id="copy-code-btn" onclick="copyCode()">📋 Kopioi koodi</button>
+    </div>
+    <button class="btn btn-primary mt-2" onclick="goToMap()">Aloita matka 🚀</button>
+  </div>
+  <div class="card hidden" id="home-resume">
+    <button class="back-btn" onclick="showChoose()">← Takaisin</button>
+    <p class="card-title mt-2">Jatka peliä</p>
+    <div class="stack">
+      <input class="input input-mono" id="code-input" placeholder="FYS-AB234" maxlength="10" oninput="this.value=this.value.toUpperCase()">
+      <p class="error hidden" id="resume-error">Koodia ei löydy. Tarkista koodi.</p>
+      <button class="btn btn-secondary" onclick="resumeGame()">Jatka peliä</button>
+    </div>
+  </div>
+</div>
+
+<header class="game-header hidden" id="game-header">
+  <div class="header-player">
+    <div class="avatar" id="header-avatar">M</div>
+    <div><div class="player-name" id="header-name">Pelaaja</div><div class="player-code" id="header-code">FYS-AB234</div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:0.75rem;">
+    <div class="xp-badge">⚡ <span id="header-xp">0</span> XP</div>
+    <button class="logout-btn" onclick="logout()" title="Kirjaudu ulos">✕</button>
+  </div>
+</header>
+
+<div id="map" class="screen">
+  <h2 class="map-title">Galaktinen Kartta</h2>
+  <p class="map-sub">Valitse seuraava määränpääsi</p>
+  <div class="topics-grid" id="topics-grid"></div>
+  <!-- Essay card -->
+  <div class="exam-card" id="essay-card" style="border-color:rgba(255,228,77,0.3);margin-top:1rem;">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem;">✍️</div>
+    <div class="exam-title">Pohdintatehtävä</div>
+    <div class="exam-desc">Kirjoita lyhyt essee fysiikan arkielämän ilmiöistä. Opettaja arvioi vastauksesi.</div>
+    <button class="btn" id="essay-btn" onclick="startEssay()" style="background:rgba(255,228,77,0.15);color:var(--yellow);border:2px solid rgba(255,228,77,0.4);">Valitse aihe ✍️</button>
+  </div>
+
+  <div class="exam-card" id="exam-card">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem;">🏆</div>
+    <div class="exam-title">Loppukoe</div>
+    <div class="exam-desc">Testaa tietosi kaikista aiheista.</div>
+    <button class="btn btn-secondary" id="exam-btn" onclick="startExam()">Aloita Koe</button>
+  </div>
+</div>
+
+<div id="theory" class="screen">
+  <div class="theory-inner">
+    <button class="back-btn" onclick="goToMap()">← Kartta</button>
+    <div class="theory-header mt-2">
+      <span class="theory-emoji" id="theory-emoji">📏</span>
+      <h2 class="theory-title" id="theory-title">Otsikko</h2>
+      <span class="theory-badge" id="theory-badge">Teoria</span>
+    </div>
+    <div class="theory-content" id="theory-content"></div>
+    <div class="keypoints" id="keypoints"></div>
+    <button class="btn btn-primary mt-3" id="theory-start-btn">Aloita tehtävät</button>
+  </div>
+</div>
+
+<div id="questions" class="screen">
+  <div class="q-inner">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="q-meta">
+      <span class="q-counter" id="q-counter">1 / 15</span>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span class="streak-badge hidden" id="streak-badge">🔥 0 putki</span>
+        <span class="q-xp" id="q-xp">+0 XP</span>
+      </div>
+    </div>
+    <div class="q-card">
+      <div class="q-type-label" id="q-type-label"></div>
+      <img class="q-img hidden" id="q-img" src="" alt="">
+      <div class="img-caption hidden" id="q-caption"></div>
+      <div class="q-text" id="q-text"></div>
+    </div>
+    <div id="answers-area"></div>
+    <div id="feedback-area"></div>
+  </div>
+</div>
+
+<div id="topic-done" class="screen">
+  <div class="done-card">
+    <div class="stars-row" id="stars-row"></div>
+    <h2 class="done-title">Alue Suoritettu! 🎉</h2>
+    <p class="done-score" id="done-score">Sait 12/15 oikein</p>
+    <div class="xp-earned"><div class="xp-label">Ansaittu XP</div><div class="xp-value" id="done-xp">+0</div></div>
+    <button class="btn btn-primary" onclick="goToMap()">Palaa Kartalle</button>
+  </div>
+</div>
+
+<div id="exam" class="screen">
+  <div class="exam-inner">
+    <div id="exam-start">
+      <div style="text-align:center;margin-bottom:2rem;"><div style="font-size:3rem;margin-bottom:1rem;">⚠️</div><h2 style="font-size:2rem;font-weight:800;margin-bottom:1rem;">Loppukoe</h2></div>
+      <div class="theory-content" style="margin-bottom:1.5rem;"><p>• 10 kysymystä kaikista aihealueista.</p><p>• Aikaa: 20 minuuttia.</p><p>• Et voi palata edellisiin kysymyksiin.</p><p>• Tulokset voi kopioida opettajalle Teamsiin.</p></div>
+      <button class="btn btn-secondary" onclick="beginExam()">Käynnistä Koe 🚀</button>
+    </div>
+    <div id="exam-questions" class="hidden">
+      <div class="q-meta"><span class="q-counter" id="eq-counter">1 / 10</span><div class="timer" id="exam-timer">20:00</div></div>
+      <div class="progress-bar mt-2"><div class="progress-fill" id="exam-progress" style="width:0%;background:var(--pink)"></div></div>
+      <div class="q-card mt-2">
+        <div class="q-type-label" id="eq-type-label"></div>
+        <img class="q-img hidden" id="eq-img" src="" alt="">
+        <div class="img-caption hidden" id="eq-caption"></div>
+        <div class="q-text" id="eq-text"></div>
+      </div>
+      <div id="exam-answers-area"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+        <button class="btn btn-secondary hidden" id="exam-next-btn" style="width:auto;padding:0.75rem 2rem;" onclick="examNext()">Seuraava →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESSAY -->
+<div id="essay" class="screen">
+  <div class="exam-inner">
+    <button class="back-btn" onclick="goToMap()">← Kartta</button>
+    <div style="text-align:center;margin:1.5rem 0 2rem;">
+      <div style="font-size:3rem;margin-bottom:0.5rem;">✍️</div>
+      <h2 style="font-size:1.8rem;font-weight:800;margin-bottom:0.5rem;">Pohdintatehtävä</h2>
+      <p style="color:var(--muted);font-size:0.9rem;">Valitse aihe ja kirjoita muutama lause omin sanoin. Ei ole oikeaa tai väärää vastausta — tärkeintä on pohtia!</p>
+    </div>
+    <div id="essay-pick">
+      <p style="font-size:0.75rem;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:1rem;">Valitse aihe</p>
+      <div id="essay-topics-list" style="display:flex;flex-direction:column;gap:0.65rem;"></div>
+    </div>
+    <div id="essay-write" class="hidden">
+      <div style="background:rgba(255,228,77,0.06);border:1px solid rgba(255,228,77,0.25);border-radius:16px;padding:1.25rem;margin-bottom:1.25rem;">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:3px;color:var(--yellow);margin-bottom:0.5rem;">Aihe</div>
+        <div id="essay-topic-display" style="font-weight:600;font-size:1rem;line-height:1.5;"></div>
+        <div id="essay-prompt-display" style="font-size:0.85rem;color:var(--muted);margin-top:0.4rem;line-height:1.5;"></div>
+      </div>
+      <textarea id="essay-textarea"
+        style="width:100%;min-height:160px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;color:var(--text);font-family:'DM Sans',sans-serif;font-size:1rem;line-height:1.7;resize:vertical;outline:none;transition:border-color 0.2s;"
+        placeholder="Kirjoita vastauksesi tähän... (vähintään muutama lause)"
+        onfocus="this.style.borderColor='var(--yellow)'"
+        onblur="this.style.borderColor='var(--border)'"
+      ></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;">
+        <span id="essay-charcount" style="font-size:0.8rem;color:var(--muted);">0 merkkiä</span>
+        <span style="font-size:0.8rem;color:var(--muted);">Suositus: vähintään 50 merkkiä</span>
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:1.25rem;">
+        <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:0.75rem 1.25rem;" onclick="essayBack()">← Vaihda aihe</button>
+        <button class="btn" id="essay-submit-btn" onclick="submitEssay()" style="background:rgba(255,228,77,0.15);color:var(--yellow);border:2px solid rgba(255,228,77,0.4);" disabled>Tallenna vastaus ✓</button>
+      </div>
+    </div>
+    <div id="essay-done" class="hidden" style="text-align:center;">
+      <div style="font-size:3.5rem;margin-bottom:1rem;">🎉</div>
+      <h3 style="font-size:1.5rem;font-weight:800;margin-bottom:0.5rem;">Tallennettu!</h3>
+      <p style="color:var(--muted);margin-bottom:1.5rem;">Vastauksesi on tallennettu. Se näkyy opettajalle Teamsiin kopioidussa raportissa.</p>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem;text-align:left;margin-bottom:1.5rem;">
+        <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:3px;color:var(--muted);margin-bottom:0.5rem;">Vastauksesi</div>
+        <div id="essay-saved-text" style="font-size:0.9rem;line-height:1.7;color:rgba(232,237,245,0.85);white-space:pre-wrap;"></div>
+      </div>
+      <button class="btn btn-primary" onclick="goToMap()">Palaa kartalle</button>
+    </div>
+  </div>
+</div>
+
+<div id="results" class="screen">
+  <div class="results-inner">
+    <h2 style="text-align:center;font-size:2rem;font-weight:800;margin-bottom:0.5rem;">Koe Suoritettu! 🎉</h2>
+    <div class="results-hero">
+      <div class="score-circle"><div class="score-pct" id="res-pct">80%</div><div class="score-sub" id="res-fraction">8/10</div></div>
+      <div style="font-size:1rem;margin-top:0.5rem;" id="res-label"></div>
+    </div>
+    <div class="topic-results"><div class="tr-title">Aiheiden suoritukset</div><div id="tr-rows"></div><div class="tr-total"><span>XP yhteensä</span><span class="tr-xp" id="tr-total-xp">0 XP</span></div></div>
+    <div class="report-box">
+      <div class="report-header"><div class="report-title">💬 Kopioi Teamsiin</div><button class="copy-report-btn" id="copy-report-btn" onclick="copyReport()">📋 Kopioi</button></div>
+      <div class="report-pre" id="report-pre"></div>
+    </div>
+    <button class="btn btn-ghost" onclick="goToMap()">← Palaa kartalle</button>
+  </div>
+</div>
+
+<script>
+const IMG = {
+  si: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Unit_relations_in_the_new_SI.svg/500px-Unit_relations_in_the_new_SI.svg.png',
+  acc: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Accuracy_and_precision.svg/400px-Accuracy_and_precision.svg.png',
+  vt: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Velocity_vs_time_graph.svg/400px-Velocity_vs_time_graph.svg.png',
+  newton: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f1/NewtonsLawOfUniversalGravitation.svg/400px-NewtonsLawOfUniversalGravitation.svg.png',
+  free: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Free_body_diagram2.svg/300px-Free_body_diagram2.svg.png',
+};
+
+const TOPICS = [
+{
+  id:'suureet', title:'Suureet ja yksiköt', desc:'SI-järjestelmä ja mittayksiköt',
+  emoji:'📏', color:'var(--cyan)', glow:'rgba(0,229,255,0.05)',
+  theory:{
+    content:`Fysiikassa mitataan erilaisia suureita, kuten pituutta, massaa ja aikaa. Jotta kaikki ymmärtävät toisiaan, on sovittu yhteisistä yksiköistä — tätä järjestelmää kutsutaan SI-järjestelmäksi (Système International d'Unités).
+
+SI-järjestelmässä on 7 perusmittaa. Tärkeimmät koulussa ovat: pituus (m), massa (kg) ja aika (s).
+
+Yksiköitä voidaan muuttaa etuliitteillä. Esimerkiksi: 1 km = 1000 m, 1 kg = 1000 g, 1 cm = 0,01 m.`,
+    img: IMG.si, imgCaption:'SI-perusyksiköiden suhteet toisiinsa',
+    keyPoints:['Suure = mitattava asia (pituus, massa, aika…)','Yksikkö = mittatikku (m, kg, s…)','kilo- = ×1000 | sentti- = ÷100 | milli- = ÷1000','Pituus→m | Massa→kg | Aika→s | Lämpötila→K','SI-järjestelmä on kansainvälinen standardi']
+  },
+  questions:[
+    {id:'s1',type:'mc',q:'Mikä on pituuden SI-perusyksikkö?',opts:['Metri (m)','Kilogramma (kg)','Sekunti (s)','Litra (l)'],ans:'Metri (m)',exp:'Pituuden SI-yksikkö on metri (m).'},
+    {id:'s2',type:'tf',q:'Kilogramma (kg) on massan SI-perusyksikkö.',ans:true,exp:'Totta! Massa mitataan kilogrammoissa.'},
+    {id:'s3',type:'mc',q:'Montako grammaa on 1 kg?',opts:['1 000 g','100 g','10 g','500 g'],ans:'1 000 g',exp:'1 kg = 1 000 g. Etuliite kilo- = ×1000.'},
+    {id:'s4',type:'mc',q:'Lämpötilan SI-perusyksikkö on?',opts:['Kelvin (K)','Celsius (°C)','Fahrenheit (°F)','Joule (J)'],ans:'Kelvin (K)',exp:'SI-järjestelmässä lämpötila mitataan Kelvineinä. 0 K ≈ −273 °C.'},
+    {id:'s5',type:'tf',q:'Litteri (l) on tilavuuden SI-perusyksikkö.',ans:false,exp:'Ei! SI-perusyksikkö on m³. Litteri on kätevä arjen yksikkö, ei virallinen SI-perusyksikkö.'},
+    {id:'s6',type:'mc',q:'Montako metriä on 3 km?',opts:['3 000 m','300 m','30 m','30 000 m'],ans:'3 000 m',exp:'3 × 1000 = 3 000 m.'},
+    {id:'s7',type:'mc',q:'Mikä etuliite tarkoittaa 1/1000 (0,001)?',img:IMG.si,imgCaption:'SI-etuliitteet',opts:['milli- (m)','sentti- (c)','mega- (M)','kilo- (k)'],ans:'milli- (m)',exp:'milli- = 1/1000. Esimerkki: 1 mm = 0,001 m.'},
+    {id:'s8',type:'tf',q:'Sekunti (s) on ajan SI-perusyksikkö.',ans:true,exp:'Totta! 1 min = 60 s, 1 h = 3 600 s.'},
+    {id:'s9',type:'mc',q:'Montako senttimetriä on 1 metri?',opts:['100 cm','10 cm','1 000 cm','50 cm'],ans:'100 cm',exp:'1 m = 100 cm. sentti- = 1/100.'},
+    {id:'s10',type:'mc',q:'Mikä on sähkövirran SI-perusyksikkö?',opts:['Ampeeri (A)','Voltti (V)','Ohmi (Ω)','Watti (W)'],ans:'Ampeeri (A)',exp:'Sähkövirran yksikkö on ampeeri (A).'},
+    {id:'s11',type:'tf',q:'1 mg on suurempi kuin 1 g.',ans:false,exp:'Ei! 1 mg = 0,001 g. Milligramma on paljon pienempi.'},
+    {id:'s12',type:'mc',q:'Montako millimetriä on 5 cm?',opts:['50 mm','5 mm','500 mm','0,5 mm'],ans:'50 mm',exp:'5 cm × 10 = 50 mm.'},
+    {id:'s13',type:'mc',q:'Mitä suure tarkoittaa fysiikassa?',opts:['Mitattavaa asiaa kuten pituus tai massa','Vain pituutta','Laskukaavaa','Yksikköä yleisesti'],ans:'Mitattavaa asiaa kuten pituus tai massa',exp:'Suure on mikä tahansa mitattava fyysinen ominaisuus.'},
+    {id:'s14',type:'tf',q:'SI-järjestelmä on käytössä vain Euroopassa.',ans:false,exp:'Ei! SI on kansainvälinen standardi, jota käytetään tieteessä kaikkialla.'},
+    {id:'s15',type:'mc',q:'Montako millisekuntia on 1 sekunti?',img:IMG.si,imgCaption:'Etuliite milli- = 1/1000',opts:['1 000 ms','100 ms','10 ms','10 000 ms'],ans:'1 000 ms',exp:'1 s = 1 000 ms. milli- = 1/1000.'},
+  ]
+},
+{
+  id:'mittaus', title:'Mittaustarkkuus', desc:'Tarkkuus ja mittavirheet',
+  emoji:'🔬', color:'hsl(30,100%,60%)', glow:'rgba(255,153,0,0.05)',
+  theory:{
+    content:`Mittaaminen on fysiikan perustyökalu. Mikään mittaus ei ole täysin tarkka — virheitä on aina.
+
+Virhetyypit:
+1. Systemaattinen virhe: Toistuu jokaisessa mittauksessa samaan suuntaan. Esimerkki: vinossa oleva viivain antaa aina liian suuren tuloksen.
+
+2. Satunnaisvirhe: Vaihtelee eri mittauskerroilla. Esimerkki: käden tärinä kelloa painettaessa.
+
+Ratkaisu: Tee useita mittauksia ja laske keskiarvo.`,
+    img: IMG.acc, imgCaption:'Tarkkuus (accuracy) vs. täsmällisyys (precision)',
+    keyPoints:['Mikään mittaus ei ole täysin tarkka','Systemaattinen virhe on aina saman suuntainen','Satunnaisvirhe vaihtelee eri mittauskerroilla','Usean mittauksen keskiarvo on luotettavampi','Kalibrointi poistaa systemaattiset virheet']
+  },
+  questions:[
+    {id:'m1',type:'mc',q:'Miksi sama mittaus kannattaa toistaa useita kertoja?',opts:['Saadaan luotettavampi tulos','Mittaus nopeutuu','Tulokset ovat aina täsmälleen samat','Mittaväline kestää paremmin'],ans:'Saadaan luotettavampi tulos',exp:'Useita mittauksia tekemällä voidaan laskea luotettava keskiarvo.'},
+    {id:'m2',type:'tf',q:'Systemaattinen virhe on aina saman suuntainen.',ans:true,exp:'Totta! Se toistuu samanlaisena joka mittauksessa.'},
+    {id:'m3',type:'mc',q:'Viivain on nollakohdastaan 1 cm vinossa. Millainen virhe syntyy?',img:IMG.acc,imgCaption:'Systemaattinen vs. satunnaisvirhe',opts:['Systemaattinen virhe','Satunnaisvirhe','Ei virhettä','Inhimillinen erehdys'],ans:'Systemaattinen virhe',exp:'Se toistuu joka kerta samanlaisena — systemaattinen virhe.'},
+    {id:'m4',type:'mc',q:'Paras tapa pienentää satunnaisvirheitä?',opts:['Mittaa useita kertoja ja laske keskiarvo','Käytä vain yhtä tulosta','Arvioi silmämääräisesti','Pyöristä ylöspäin'],ans:'Mittaa useita kertoja ja laske keskiarvo',exp:'Satunnaiset vaihtelut tasoittuvat keskiarvossa.'},
+    {id:'m5',type:'tf',q:'Mikään mittaus ei ole täysin tarkka.',ans:true,exp:'Totta! Aina on jonkin verran virhettä.'},
+    {id:'m6',type:'mc',q:'Mittaukset vaihtelevat 9,8–10,2 cm. Mikä johtaa tähän?',opts:['Satunnaisvirheet','Systemaattinen virhe','Kappaleen koko muuttuu','Mittaväline on rikki'],ans:'Satunnaisvirheet',exp:'Vaihtelevat tulokset ovat satunnaisvirheitä.'},
+    {id:'m7',type:'tf',q:'Digitaalinen vaaka on aina tarkempi kuin mekaaninen.',ans:false,exp:'Ei välttämättä! Tarkkuus riippuu laitteen laadusta ja kalibroinnista.'},
+    {id:'m8',type:'mc',q:'5 mittausta: 9,8 / 10,0 / 10,1 / 10,0 / 10,1 cm. Mikä on paras arvio?',opts:['10,0 cm','9,8 cm','10,1 cm','10,5 cm'],ans:'10,0 cm',exp:'Keskiarvo = (9,8+10,0+10,1+10,0+10,1)/5 = 50,0/5 = 10,0 cm.'},
+    {id:'m9',type:'mc',q:'Mitä tarkoittaa mittauksen "toistettavuus"?',opts:['Sama mittaus antaa lähes saman tuloksen eri kerroilla','Mittaus tehdään aina samalla henkilöllä','Mittaustulos on aina oikein','Mittauksen hinta pysyy samana'],ans:'Sama mittaus antaa lähes saman tuloksen eri kerroilla',exp:'Toistettavuus = mittaus voidaan toistaa ja saada lähes sama tulos.'},
+    {id:'m10',type:'tf',q:'Inhimillinen erehdys on sama asia kuin satunnaisvirhe.',ans:false,exp:'Ei! Inhimillinen erehdys (väärin kirjattu tulos) on oma virhetyyppinsä.'},
+    {id:'m11',type:'mc',q:'Vaaka näyttää aina 200 g liikaa. Mikä virhe?',img:IMG.acc,imgCaption:'Systemaattinen vs. satunnaisvirhe',opts:['Systemaattinen virhe','Satunnaisvirhe','Inhimillinen erehdys','Ei virhettä'],ans:'Systemaattinen virhe',exp:'Aina sama ylimäärä = systemaattinen virhe. Kalibroinnilla korjataan.'},
+    {id:'m12',type:'mc',q:'5 mittausta: 4,9/5,0/5,1/5,0/5,0 cm. Paras arvio?',opts:['5,0 cm','4,9 cm','5,1 cm','5,5 cm'],ans:'5,0 cm',exp:'Keskiarvo = 25,0/5 = 5,0 cm.'},
+    {id:'m13',type:'tf',q:'Pyöristäminen aiheuttaa aina systemaattisen virheen.',ans:false,exp:'Ei! Pyöristys aiheuttaa pyöristysvirheen, ei systemaattisen virheen.'},
+    {id:'m14',type:'mc',q:'Milloin mittaustulosten hajonta on pienin?',opts:['Kun mitataan tarkasti ja huolellisesti','Kun mitataan nopeasti','Vanhalla mittavälineellä','Väsyneenä'],ans:'Kun mitataan tarkasti ja huolellisesti',exp:'Huolellinen mittaaminen vähentää satunnaisvirheiden suuruutta.'},
+    {id:'m15',type:'mc',q:'Mitä "kalibrointi" tarkoittaa?',opts:['Mittavälineen säätäminen näyttämään oikeaa arvoa','Mittauksen toistaminen 10 kertaa','Tulosten pyöristäminen','Mittaajan kouluttaminen'],ans:'Mittavälineen säätäminen näyttämään oikeaa arvoa',exp:'Kalibrointi poistaa systemaattiset virheet tarkistamalla mittavälineen.'},
+  ]
+},
+{
+  id:'liike', title:'Liike', desc:'Keskinopeus ja kiihtyvyys',
+  emoji:'🚗', color:'hsl(200,100%,60%)', glow:'rgba(0,153,255,0.05)',
+  theory:{
+    content:`Liike tarkoittaa, että kappale muuttaa sijaintiaan ajan kuluessa.
+
+KESKINOPEUS:  v = s / t  (matka ÷ aika)
+Esimerkki: Auto kulkee 120 km kahdessa tunnissa → v = 120/2 = 60 km/h.
+
+KIIHTYVYYS:  a = Δv / t  (nopeuden muutos ÷ aika)
+Yksikkö: m/s². Hidastuminen = negatiivinen kiihtyvyys.`,
+    img: IMG.vt, imgCaption:'Nopeus–aika -kuvaaja: tasainen vs. kiihtyvä liike',
+    keyPoints:['Nopeus v = s / t (m/s tai km/h)','Matka s = v × t','Aika t = s / v','Kiihtyvyys a = Δv / t (m/s²)','Negatiivinen kiihtyvyys = hidastuminen']
+  },
+  questions:[
+    {id:'l1',type:'mc',q:'Keskinopeuden kaava on:',opts:['v = s / t','v = s × t','v = t / s','v = a × t'],ans:'v = s / t',exp:'Keskinopeus = matka ÷ aika. Esimerkki: 100 km / 2 h = 50 km/h.'},
+    {id:'l2',type:'mc',q:'Auto kulkee 60 km/h. Matka 2 tunnissa?',opts:['120 km','60 km','30 km','240 km'],ans:'120 km',exp:'s = v × t = 60 × 2 = 120 km.'},
+    {id:'l3',type:'tf',q:'Kiihtyvyys tarkoittaa, että kappaleen nopeus muuttuu.',ans:true,exp:'Totta! Kiihtyvyys kuvaa nopeuden muuttumista aikayksikköä kohden.'},
+    {id:'l4',type:'mc',q:'Pyörä kulkee 500 m 100 sekunnissa. Keskinopeus?',opts:['5 m/s','50 m/s','0,5 m/s','500 m/s'],ans:'5 m/s',exp:'v = 500/100 = 5 m/s ≈ 18 km/h.'},
+    {id:'l5',type:'mc',q:'Kiihtyvyyden SI-yksikkö on:',img:IMG.vt,imgCaption:'Nopeus–aika -kuvaajan kulmakerroin = kiihtyvyys',opts:['m/s²','m/s','km/h','N'],ans:'m/s²',exp:'m/s² kertoo kuinka paljon m/s nopeus muuttuu sekunnissa.'},
+    {id:'l6',type:'tf',q:'Jos auto hidastuu jarrutuksessa, kiihtyvyys on negatiivinen.',ans:true,exp:'Totta! Hidastuminen = negatiivinen kiihtyvyys.'},
+    {id:'l7',type:'mc',q:'Juna kulkee 200 km 2,5 tunnissa. Keskinopeus?',opts:['80 km/h','100 km/h','50 km/h','200 km/h'],ans:'80 km/h',exp:'v = 200/2,5 = 80 km/h.'},
+    {id:'l8',type:'mc',q:'Auto kiihtyy 0→20 m/s 4 sekunnissa. Kiihtyvyys?',opts:['5 m/s²','80 m/s²','0,2 m/s²','20 m/s²'],ans:'5 m/s²',exp:'a = Δv/t = 20/4 = 5 m/s².'},
+    {id:'l9',type:'tf',q:'Keskinopeus kertoo kappaleen nopeuden jokaisella hetkellä.',ans:false,exp:'Ei! Keskinopeus on matkan ja ajan suhde koko matkalle. Hetkellinen nopeus voi vaihdella.'},
+    {id:'l10',type:'mc',q:'Mopedi, 45 km/h. Kuinka kauan kestää 90 km?',opts:['2 tuntia','1 tunti','3 tuntia','0,5 tuntia'],ans:'2 tuntia',exp:'t = s/v = 90/45 = 2 h.'},
+    {id:'l11',type:'mc',q:'Mitä tarkoittaa "tasainen liike"?',opts:['Nopeus pysyy vakiona','Kappale on paikallaan','Kiihtyvyys kasvaa','Suunta muuttuu'],ans:'Nopeus pysyy vakiona',exp:'Tasaisessa liikkeessä nopeus ei muutu eli kiihtyvyys = 0.'},
+    {id:'l12',type:'mc',q:'Kivi putoaa 5 s, g = 10 m/s². Nopeus maahan osuessa?',img:IMG.vt,imgCaption:'Vapaa putoaminen: v = g × t',opts:['50 m/s','10 m/s','5 m/s','100 m/s'],ans:'50 m/s',exp:'v = g × t = 10 × 5 = 50 m/s.'},
+    {id:'l13',type:'tf',q:'Nopeus on vektorisuure — sillä on suunta.',ans:true,exp:'Totta! Nopeusvektori kertoo sekä suuruuden että suunnan. Skalaari "vauhti" kertoo vain suuruuden.'},
+    {id:'l14',type:'mc',q:'Juoksija tekee 400 m 50 sekunnissa. Keskinopeus?',opts:['8 m/s','4 m/s','50 m/s','0,125 m/s'],ans:'8 m/s',exp:'v = 400/50 = 8 m/s ≈ 28,8 km/h.'},
+    {id:'l15',type:'mc',q:'Auto hidastuu 20→0 m/s 4 sekunnissa. Kiihtyvyys?',opts:['-5 m/s²','5 m/s²','-20 m/s²','4 m/s²'],ans:'-5 m/s²',exp:'a = (0-20)/4 = -5 m/s². Negatiivinen = hidastuminen.'},
+  ]
+},
+{
+  id:'voima', title:'Voima', desc:'Newtonin lait',
+  emoji:'💪', color:'hsl(260,100%,70%)', glow:'rgba(128,0,255,0.05)',
+  theory:{
+    content:`Voima voi laittaa kappaleen liikkeelle, pysäyttää sen tai muuttaa liikesuuntaa. Yksikkö: Newton (N).
+
+Newtonin kolme lakia:
+⚡ I Laki (Hitauslaki): Kappale pysyy tilassaan, jos nettvovoima = 0.
+
+⚡ II Laki: F = m × a (voima = massa × kiihtyvyys).
+
+⚡ III Laki (Vastavoimalaki): Jokaiselle voimalle on yhtä suuri vastavoima.`,
+    img: IMG.free, imgCaption:'Vapaakappalekuva: voimien visualisointi',
+    keyPoints:['Voiman yksikkö on Newton (N)','I laki: kappale ei muuta liikettään ilman voimaa','II laki: F = m × a','III laki: jokaiselle voimalle on yhtä suuri vastavoima','Paino W = m × g (g ≈ 10 m/s²)']
+  },
+  questions:[
+    {id:'v1',type:'mc',q:'Mikä on voiman SI-yksikkö?',opts:['Newton (N)','Joule (J)','Pascal (Pa)','Watti (W)'],ans:'Newton (N)',exp:'Voiman yksikkö on Newton (N).'},
+    {id:'v2',type:'mc',q:'Auto (500 kg) kiihtyy 4 m/s². Voima?',opts:['2 000 N','500 N','125 N','4 N'],ans:'2 000 N',exp:'F = m × a = 500 × 4 = 2 000 N.'},
+    {id:'v3',type:'tf',q:'Newtonin I lain mukaan kappale pysyy tilassaan, jos siihen ei vaikuta nettovoimaa.',ans:true,exp:'Totta! Tätä kutsutaan hitauslaiksi.'},
+    {id:'v4',type:'mc',q:'Mitä Newtonin III laki tarkoittaa?',opts:['Jokaiselle voimalle on yhtä suuri vastavoima','F = m × a','Kappale ei muuta liikettään ilman voimaa','Voima riippuu vain massasta'],ans:'Jokaiselle voimalle on yhtä suuri vastavoima',exp:'III laki: työnnät seinää → seinä työntää takaisin yhtä kovaa!'},
+    {id:'v5',type:'match',q:'Yhdistä Newtonin laki sen sisältöön.',pairs:[{l:'I laki',r:'Kappale ei muuta liikettään ilman voimaa'},{l:'II laki',r:'F = m × a'},{l:'III laki',r:'Jokaiselle voimalle vastavoima'}],ans:'__match__',exp:'I=hitauslaki, II=F=ma, III=vastavoima.'},
+    {id:'v6',type:'tf',q:'Paino ja massa ovat sama asia.',ans:false,exp:'Ei! Massa (kg) = aineen määrä. Paino (N) = painovoima. Kuussa massa sama, paino pienempi.'},
+    {id:'v7',type:'mc',q:'Lapsi (40 kg), g = 10 m/s². Paino?',opts:['400 N','40 N','4000 N','4 N'],ans:'400 N',exp:'W = m × g = 40 × 10 = 400 N.'},
+    {id:'v8',type:'tf',q:'Suurempi massa tarvitsee suuremman voiman saman kiihtyvyyden saavuttamiseksi.',ans:true,exp:'Totta! F = m × a. Massa kaksinkertaistuu → tarvitaan kaksinkertainen voima.'},
+    {id:'v9',type:'mc',q:'Kaksi henkilöä potkaisee palloa yhtä kovaa vastakkaisiin suuntiin. Mitä tapahtuu?',img:IMG.free,imgCaption:'Voimien tasapaino',opts:['Pallo pysyy paikallaan','Pallo liikkuu oikealle','Pallo liikkuu vasemmalle','Pallo lentää ilmaan'],ans:'Pallo pysyy paikallaan',exp:'Yhtä suuret vastavoimat = nettvovoima = 0 → kappale pysyy paikallaan.'},
+    {id:'v10',type:'mc',q:'Kappale (2 kg) kiihtyy 6 m/s². Voima?',opts:['12 N','8 N','3 N','2 N'],ans:'12 N',exp:'F = 2 × 6 = 12 N.'},
+    {id:'v11',type:'tf',q:'Kappale voi liikkua tasaisella nopeudella vaikka siihen vaikuttaa suuri voima.',ans:false,exp:'Ei! Tasainen liike vaatii nettvovoiman = 0. Suuri nettvovoima aiheuttaa kiihtyvyyttä.'},
+    {id:'v12',type:'mc',q:'Mikä on Newtonin I lain toinen nimi?',opts:['Hitauslaki','Voimalaki','Vastavoimalaki','Liikemäärälaki'],ans:'Hitauslaki',exp:'I lakia kutsutaan hitauslaiksi — kappaleen "hitaus" vastustaa liikkeen muutosta.'},
+    {id:'v13',type:'mc',q:'Raketti: kaasut purkautuvat taaksepäin. Mihin raketti liikkuu?',img:IMG.free,imgCaption:'III laki: voima-vastavoima',opts:['Eteenpäin','Taaksepäin','Pysähtyy','Sivulle'],ans:'Eteenpäin',exp:'III laki: kaasut taaksepäin → vastavoima vie rakettia eteenpäin. Reaktiomoottori!'},
+    {id:'v14',type:'tf',q:'Painovoima vetää kappaleet toisiaan kohti.',ans:true,exp:'Totta! Gravitaatio vetää kaikkia massallisia kappaleita toisiaan kohti.'},
+    {id:'v15',type:'mc',q:'Kappale (10 kg) pöydällä, g = 10 m/s². Pöydän tukivoima?',opts:['100 N','10 N','9,81 N','0 N'],ans:'100 N',exp:'Paino = 10 × 10 = 100 N. III lain mukaan pöytä tukee 100 N ylöspäin.'},
+  ]
+}
+];
+
+const ESSAY_TOPICS=[
+  {id:'turvavyo',title:'Turvavyö ja Newtonin lait',prompt:'Miksi turvavyö on tärkeä? Miten Newtonin I laki (hitauslaki) selittää, mitä tapahtuu törmäyksessä?'},
+  {id:'pyoraily',title:'Pyöräily ja nopeus',prompt:'Milloin olet huomannut nopeuden tai kiihtyvyyden muutoksen pyöräillessä tai bussissa? Miten keskinopeus näkyy arjessa?'},
+  {id:'kauppa',title:'Paino kaupassa',prompt:'Mitä eroa on massalla ja painolla? Mitä vaaka kaupassa oikeasti mittaa — massaa vai painoa?'},
+  {id:'lampotila',title:'Lämpötila ja yksiköt',prompt:'Missä arkielämässä kohtaat eri lämpötila-asteikkoja? Miksi tieteessä käytetään Kelviniä eikä Celsiusta?'},
+  {id:'mittaus_arki',title:'Mittaaminen arjessa',prompt:'Milloin olet mitannut jotain arjessa (rakentaessa, ruoanlaitossa, urheilussa)? Miten mittausvirhe voisi syntyä?'},
+  {id:'jarrutus',title:'Jarrutus ja turvaväli',prompt:'Mitä tapahtuu kun auto jarruttaa äkillisesti? Miten kiihtyvyys ja nopeus vaikuttavat tarvittavaan jarrutusmatkaan?'},
+  {id:'urheilu',title:'Fysiikka urheilussa',prompt:'Valitse jokin urheilulaji. Miten nopeus, voima, massa tai kiihtyvyys näkyy siinä käytännössä?'},
+  {id:'rakentaminen',title:'Voima rakentamisessa',prompt:'Miten voimat näkyvät rakentamisessa tai käsitöissä? Pohdi esimerkiksi nostamista, tukirakenteita tai työkalujen käyttöä.'},
+];
+let state={playerName:'',saveCode:'',completedTopics:[],topicResults:{},totalXP:0,unlockedTopics:['suureet'],examScore:null,examCorrect:null,examTotal:null,examDate:null,essayTopic:null,essayText:null,essayDate:null};
+let currentTopic=null,currentQIndex=0,currentScore=0,currentStreak=0,currentXP=0;
+let examQuestions=[],examIndex=0,examAnswers={},examTimer=null,examTimeLeft=1200;
+let matchSelected=null,matchDone={};
+
+function genCode(){const L='ABCDEFGHJKLMNPQRSTUVWXYZ',N='23456789';let c='FYS-';for(let i=0;i<2;i++)c+=L[Math.floor(Math.random()*L.length)];for(let i=0;i<3;i++)c+=N[Math.floor(Math.random()*N.length)];return c;}
+function save(){const all=JSON.parse(localStorage.getItem('fysiikka_saves')||'{}');all[state.saveCode]=state;localStorage.setItem('fysiikka_saves',JSON.stringify(all));localStorage.setItem('fysiikka_current',JSON.stringify(state));}
+function load(){const s=localStorage.getItem('fysiikka_current');if(s){state=JSON.parse(s);return true;}return false;}
+function showChoose(){document.getElementById('home-choose').classList.remove('hidden');['home-new','home-resume','home-code'].forEach(id=>document.getElementById(id).classList.add('hidden'));}
+function showNewGame(){document.getElementById('home-choose').classList.add('hidden');document.getElementById('home-new').classList.remove('hidden');}
+function showResume(){document.getElementById('home-choose').classList.add('hidden');document.getElementById('home-resume').classList.remove('hidden');}
+function startNewGame(){const n=document.getElementById('name-input').value.trim();if(!n)return;state={playerName:n,saveCode:genCode(),completedTopics:[],topicResults:{},totalXP:0,unlockedTopics:['suureet'],examScore:null,examCorrect:null,examTotal:null,examDate:null};save();document.getElementById('code-display').textContent=state.saveCode;document.getElementById('home-new').classList.add('hidden');document.getElementById('home-code').classList.remove('hidden');}
+function copyCode(){navigator.clipboard.writeText(state.saveCode);const btn=document.getElementById('copy-code-btn');btn.textContent='✅ Kopioitu!';setTimeout(()=>btn.textContent='📋 Kopioi koodi',2000);}
+function resumeGame(){const code=document.getElementById('code-input').value.trim().toUpperCase();const all=JSON.parse(localStorage.getItem('fysiikka_saves')||'{}');if(all[code]){state=all[code];save();document.getElementById('resume-error').classList.add('hidden');goToMap();}else document.getElementById('resume-error').classList.remove('hidden');}
+function goToMap(){updateHeader();showScreen('map');renderMap();}
+function logout(){if(confirm('Haluatko kirjautua ulos? Tallenna koodi: '+state.saveCode)){localStorage.removeItem('fysiikka_current');state={playerName:'',saveCode:'',completedTopics:[],topicResults:{},totalXP:0,unlockedTopics:['suureet'],examScore:null,examCorrect:null,examTotal:null,examDate:null};document.getElementById('game-header').classList.add('hidden');showScreen('home');showChoose();}}
+function updateHeader(){if(!state.playerName)return;document.getElementById('game-header').classList.remove('hidden');document.getElementById('header-avatar').textContent=state.playerName.charAt(0).toUpperCase();document.getElementById('header-name').textContent=state.playerName;document.getElementById('header-code').textContent=state.saveCode;document.getElementById('header-xp').textContent=state.totalXP;}
+function renderMap(){const grid=document.getElementById('topics-grid');grid.innerHTML='';TOPICS.forEach(t=>{const unlocked=state.unlockedTopics.includes(t.id);const completed=state.completedTopics.includes(t.id);const xp=state.topicResults[t.id]?.xp||0;const div=document.createElement('div');div.className='topic-card'+(unlocked?'':' locked')+(completed?' completed':'');div.style.setProperty('--glow',t.glow);div.innerHTML=`<div class="topic-emoji">${t.emoji}</div><div class="topic-info"><div class="topic-title" style="color:${completed?'var(--green)':t.color}">${t.title}</div><div class="topic-desc">${t.desc}</div>${completed?`<div class="topic-xp">+${xp} XP ansaittu</div>`:''}</div><div class="topic-status">${completed?'✅':unlocked?'▶️':'🔒'}</div>`;if(unlocked)div.onclick=()=>openTopic(t.id);grid.appendChild(div);});const eu=state.completedTopics.length>=4;document.getElementById('exam-card').className='exam-card'+(eu?'':' locked-exam');const eb=document.getElementById('exam-btn');eb.disabled=!eu;eb.textContent=eu?'Aloita Koe':'Läpäise kaikki aiheet ensin';
+const essayDone=state.essayText&&state.essayText.length>0;const essayBtn=document.getElementById('essay-btn');essayBtn.textContent=essayDone?'✅ Vastaus tallennettu — muokkaa':'Valitse aihe ✍️';essayBtn.style.background=essayDone?'rgba(0,255,136,0.1)':'rgba(255,228,77,0.15)';essayBtn.style.color=essayDone?'var(--green)':'var(--yellow)';essayBtn.style.borderColor=essayDone?'rgba(0,255,136,0.3)':'rgba(255,228,77,0.4)';}
+function openTopic(id){currentTopic=TOPICS.find(t=>t.id===id);currentQIndex=0;currentScore=0;currentStreak=0;currentXP=0;const t=currentTopic;document.getElementById('theory-emoji').textContent=t.emoji;document.getElementById('theory-title').textContent=t.title;const badge=document.getElementById('theory-badge');badge.textContent='Teoria';badge.style.background=t.color+'22';badge.style.color=t.color;const content=document.getElementById('theory-content');let html='';if(t.theory.img)html+=`<img class="theory-img" src="${t.theory.img}" alt="${t.theory.imgCaption||''}"><p class="img-caption">${t.theory.imgCaption||''}</p>`;html+=t.theory.content.split('\n').map(l=>l.trim()===''?'':l.startsWith('⚡')||l.match(/^\d\./)?`<p><strong>${l}</strong></p>`:`<p>${l}</p>`).join('');content.innerHTML=html;document.getElementById('keypoints').innerHTML='<h3>Muista nämä</h3>'+t.theory.keyPoints.map((p,i)=>`<div class="keypoint"><div class="kp-num" style="background:${t.color}22;color:${t.color}">${i+1}</div><div class="kp-text">${p}</div></div>`).join('');const sb=document.getElementById('theory-start-btn');sb.textContent=`Aloita tehtävät (${t.questions.length} kpl)`;sb.style.background=t.color;sb.style.color='#000';sb.onclick=()=>{showScreen('questions');renderQuestion();};showScreen('theory');}
+
+function setQImg(img,cap,imgId,capId){const i=document.getElementById(imgId);const c=document.getElementById(capId);if(img){i.src=img;i.classList.remove('hidden');c.textContent=cap||'';c.classList.remove('hidden');}else{i.classList.add('hidden');c.classList.add('hidden');}}
+
+function renderQuestion(){const q=currentTopic.questions[currentQIndex];const total=currentTopic.questions.length;document.getElementById('progress-fill').style.width=`${(currentQIndex/total)*100}%`;document.getElementById('q-counter').textContent=`${currentQIndex+1} / ${total}`;document.getElementById('q-xp').textContent=`+${currentXP} XP`;const sb=document.getElementById('streak-badge');if(currentStreak>=3){sb.classList.remove('hidden');sb.textContent=`🔥 ${currentStreak} putki`;}else sb.classList.add('hidden');document.getElementById('q-type-label').textContent={mc:'Monivalinta',tf:'Totta vai Tarua',match:'Yhdistämistehtävä'}[q.type]||'';document.getElementById('q-text').textContent=q.q;document.getElementById('feedback-area').innerHTML='';setQImg(q.img||null,q.imgCaption||'','q-img','q-caption');if(q.type==='match'){matchSelected=null;matchDone={};renderMatching(q);}else{const opts=q.type==='tf'?['Totta','Tarua']:q.opts;document.getElementById('answers-area').innerHTML=`<div class="answers">${opts.map(o=>`<button class="ans-btn" onclick="selectAns(${JSON.stringify(o)},this)">${o}</button>`).join('')}</div>`;}}
+
+function selectAns(val,btn){const q=currentTopic.questions[currentQIndex];const correct=(q.type==='tf'?(val==='Totta'):val)===q.ans;document.querySelectorAll('.ans-btn').forEach(b=>{b.disabled=true;const bv=q.type==='tf'?(b.textContent==='Totta'):b.textContent;if(bv===q.ans)b.classList.add('correct');else if(b===btn&&!correct)b.classList.add('wrong');else b.classList.add('dim');});showFeedback(correct,q.exp);processAns(correct);}
+
+function renderMatching(q){const sh=[...q.pairs].sort(()=>0.5-Math.random());document.getElementById('answers-area').innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1rem;margin-bottom:0.5rem;"><div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);text-align:center;">Käsite</div><div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted);text-align:center;">Vastine</div>${q.pairs.map(p=>`<button class="match-btn${matchDone[p.l]?' matched':''}" id="ml_${p.l.replace(/\W/g,'_')}" onclick="mLeft(${JSON.stringify(p.l)})">${p.l}</button>`).join('')}${sh.map(p=>`<button class="match-btn${Object.values(matchDone).includes(p.r)?' matched':''}" id="mr_${p.r.replace(/\W/g,'_')}" onclick="mRight(${JSON.stringify(p.r)})">${p.r}</button>`).join('')}</div><div style="font-size:0.8rem;color:var(--muted);text-align:center;margin-bottom:0.5rem;" id="mhint">${matchSelected?`"${matchSelected}" valittu — klikkaa vastine`:'Klikkaa ensin vasemmalta, sitten oikealta'}</div><button class="btn btn-primary mt-1 hidden" id="mcheck" onclick="checkMatch()">Tarkista ✓</button>`;if(matchSelected){const lb=document.getElementById('ml_'+matchSelected.replace(/\W/g,'_'));if(lb)lb.classList.add('selected');}if(Object.keys(matchDone).length===q.pairs.length)document.getElementById('mcheck').classList.remove('hidden');}
+
+function mLeft(l){const q=currentTopic.questions[currentQIndex];if(matchDone[l])return;matchSelected=matchSelected===l?null:l;renderMatching(q);}
+function mRight(r){const q=currentTopic.questions[currentQIndex];if(!matchSelected||Object.values(matchDone).includes(r))return;matchDone[matchSelected]=r;matchSelected=null;renderMatching(q);}
+function checkMatch(){const q=currentTopic.questions[currentQIndex];const ok=q.pairs.every(p=>matchDone[p.l]===p.r);q.pairs.forEach(p=>{const lb=document.getElementById('ml_'+p.l.replace(/\W/g,'_'));const rb=document.getElementById('mr_'+p.r.replace(/\W/g,'_'));const c=matchDone[p.l]===p.r;[lb,rb].forEach(b=>{if(b){b.disabled=true;b.classList.add(c?'correct':'wrong');}});});document.getElementById('mcheck').classList.add('hidden');showFeedback(ok,q.exp);processAns(ok);}
+
+function processAns(correct){if(correct){currentScore++;currentStreak++;currentXP+=20+(currentStreak>=3?10:0);}else currentStreak=0;}
+function showFeedback(correct,exp){document.getElementById('feedback-area').innerHTML=`<div class="feedback ${correct?'correct-fb':'wrong-fb'}"><div class="fb-header ${correct?'fb-correct':'fb-wrong'}">${correct?'✅ Oikein! 🎉':'❌ Ei ihan oikein'}</div><div class="fb-text">${exp}</div><button class="btn btn-primary mt-1" style="width:auto;align-self:flex-end;padding:0.6rem 1.5rem;font-size:0.9rem;" onclick="nextQ()">${currentQIndex<currentTopic.questions.length-1?'Seuraava →':'Katso tulos'}</button></div>`;}
+function nextQ(){if(currentQIndex<currentTopic.questions.length-1){currentQIndex++;renderQuestion();}else finishTopic();}
+function finishTopic(){const total=currentTopic.questions.length;const stars=currentScore>=total*.8?3:currentScore>=total*.6?2:1;if(!state.completedTopics.includes(currentTopic.id)){state.completedTopics.push(currentTopic.id);state.topicResults[currentTopic.id]={xp:currentXP,date:new Date().toLocaleDateString('fi-FI')};state.totalXP+=currentXP;const order=['suureet','mittaus','liike','voima'];const idx=order.indexOf(currentTopic.id);if(idx<order.length-1){const next=order[idx+1];if(!state.unlockedTopics.includes(next))state.unlockedTopics.push(next);}save();}updateHeader();document.getElementById('stars-row').innerHTML=['⭐','⭐','⭐'].map((s,i)=>`<span class="star-icon${i<stars?' lit':''}" style="animation-delay:${i*.3}s;filter:${i<stars?'none':'grayscale(1) opacity(0.3)'}">${s}</span>`).join('');document.getElementById('done-score').textContent=`Sait ${currentScore}/${total} oikein`;document.getElementById('done-xp').textContent=`+${currentXP}`;showScreen('topic-done');}
+
+function startExam(){if(state.completedTopics.length<4)return;showScreen('exam');}
+function beginExam(){examQuestions=[...TOPICS.flatMap(t=>t.questions.filter(q=>q.type!=='match'))].sort(()=>0.5-Math.random()).slice(0,10);examIndex=0;examAnswers={};examTimeLeft=1200;document.getElementById('exam-start').classList.add('hidden');document.getElementById('exam-questions').classList.remove('hidden');examTimer=setInterval(()=>{examTimeLeft--;const m=Math.floor(examTimeLeft/60),s=examTimeLeft%60;const t=document.getElementById('exam-timer');t.textContent=`${m}:${s.toString().padStart(2,'0')}`;t.className='timer'+(examTimeLeft<60?' urgent':'');if(examTimeLeft<=0){clearInterval(examTimer);finishExam();}},1000);renderExamQ();}
+function renderExamQ(){const q=examQuestions[examIndex];document.getElementById('eq-counter').textContent=`${examIndex+1} / ${examQuestions.length}`;document.getElementById('exam-progress').style.width=`${(examIndex/examQuestions.length)*100}%`;document.getElementById('eq-type-label').textContent=q.type==='tf'?'Totta vai Tarua':'Monivalinta';document.getElementById('eq-text').textContent=q.q;document.getElementById('exam-next-btn').classList.add('hidden');setQImg(q.img||null,q.imgCaption||'','eq-img','eq-caption');const opts=q.type==='tf'?['Totta','Tarua']:q.opts;document.getElementById('exam-answers-area').innerHTML=`<div class="answers">${opts.map(o=>`<button class="ans-btn" onclick="examAns(${JSON.stringify(o)},this)">${o}</button>`).join('')}</div>`;}
+function examAns(val,btn){examAnswers[examQuestions[examIndex].id]=val;document.querySelectorAll('#exam-answers-area .ans-btn').forEach(b=>{b.disabled=true;if(b===btn)b.classList.add('selected');else b.classList.add('dim');});document.getElementById('exam-next-btn').classList.remove('hidden');}
+function examNext(){if(examIndex<examQuestions.length-1){examIndex++;renderExamQ();}else finishExam();}
+function finishExam(){clearInterval(examTimer);let correct=0;examQuestions.forEach(q=>{const a=examAnswers[q.id];if((q.type==='tf'?(a==='Totta'):a)===q.ans)correct++;});state.examScore=Math.round(correct/examQuestions.length*100);state.examCorrect=correct;state.examTotal=examQuestions.length;state.examDate=new Date().toLocaleDateString('fi-FI');save();showResults();}
+function showResults(){document.getElementById('res-pct').textContent=state.examScore+'%';document.getElementById('res-fraction').textContent=`${state.examCorrect}/${state.examTotal}`;document.getElementById('res-label').textContent=state.examScore>=90?'🚀 Täydellistä!':state.examScore>=70?'🎯 Hienoa työtä!':state.examScore>=50?'👍 Läpi meni!':'💪 Harjoittele lisää!';document.getElementById('tr-rows').innerHTML=TOPICS.map(t=>{const r=state.topicResults[t.id];return r?`<div class="tr-row"><span>${t.emoji} ${t.title}</span><span class="tr-xp">+${r.xp} XP</span></div>`:''}).join('');document.getElementById('tr-total-xp').textContent=state.totalXP+' XP';document.getElementById('report-pre').textContent=buildReport();showScreen('results');updateHeader();}
+function buildReport(){const lines=['📊 Fysiikka-peli — Tulokset',`👤 Pelaaja: ${state.playerName}`,`🔑 Koodi: ${state.saveCode}`,`📅 Päivämäärä: ${state.examDate||new Date().toLocaleDateString('fi-FI')}`,'','📚 Aiheiden suoritukset:',...TOPICS.map(t=>{const r=state.topicResults[t.id];return r?`  • ${t.title}: +${r.xp} XP (${r.date})`:null}).filter(Boolean)];if(state.examScore!==null){lines.push('','🏆 Loppukoe:',`  Oikein: ${state.examCorrect}/${state.examTotal} (${state.examScore}%)`,`  ${state.examScore>=80?'⭐⭐⭐ Erinomainen!':state.examScore>=60?'⭐⭐ Hyvä!':'⭐ Suoritettu'}`);}lines.push('',`💫 XP yhteensä: ${state.totalXP}`);if(state.essayText){const et=ESSAY_TOPICS.find(t=>t.id===state.essayTopic);lines.push('','✍️ Pohdintatehtävä:',`  Aihe: ${et?et.title:'—'}`,`  Päivämäärä: ${state.essayDate||'—'}`,'  Vastaus:',`  "${state.essayText}"`);}return lines.join('\n');}
+function copyReport(){navigator.clipboard.writeText(buildReport());const btn=document.getElementById('copy-report-btn');btn.textContent='✅ Kopioitu!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='📋 Kopioi';btn.classList.remove('copied');},2500);}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+function createStars(){const c=document.getElementById('stars');for(let i=0;i<80;i++){const s=document.createElement('div');s.className='star';const sz=Math.random()*2+0.5;s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${2+Math.random()*4}s;--delay:-${Math.random()*4}s`;c.appendChild(s);}}
+
+function startEssay(){showScreen('essay');renderEssayPick();}
+function renderEssayPick(){
+  document.getElementById('essay-pick').classList.remove('hidden');
+  document.getElementById('essay-write').classList.add('hidden');
+  document.getElementById('essay-done').classList.add('hidden');
+  const list=document.getElementById('essay-topics-list');
+  list.innerHTML=ESSAY_TOPICS.map(t=>{
+    const selected=state.essayTopic===t.id;
+    return `<button onclick="pickEssayTopic('${t.id}')" style="padding:1rem 1.25rem;background:${selected?'rgba(255,228,77,0.1)':'var(--surface2)'};border:2px solid ${selected?'rgba(255,228,77,0.5)':'var(--border)'};border-radius:14px;color:${selected?'var(--yellow)':'var(--text)'};font-family:DM Sans,sans-serif;font-size:0.95rem;font-weight:500;cursor:pointer;transition:all 0.2s;text-align:left;display:flex;align-items:center;gap:0.75rem;">
+      <span style="font-size:1.2rem;">${selected?'🟡':'⭕'}</span>
+      <span>${t.title}</span>
+    </button>`;
+  }).join('');
+}
+function pickEssayTopic(id){
+  document.getElementById('essay-pick').classList.add('hidden');
+  document.getElementById('essay-write').classList.remove('hidden');
+  const t=ESSAY_TOPICS.find(e=>e.id===id);
+  document.getElementById('essay-topic-display').textContent=t.title;
+  document.getElementById('essay-prompt-display').textContent=t.prompt;
+  const ta=document.getElementById('essay-textarea');
+  ta.value=(state.essayTopic===id&&state.essayText)?state.essayText:'';
+  updateEssayCount();
+  state.essayTopic=id;
+}
+function essayBack(){
+  document.getElementById('essay-pick').classList.remove('hidden');
+  document.getElementById('essay-write').classList.add('hidden');
+  renderEssayPick();
+}
+function updateEssayCount(){
+  const ta=document.getElementById('essay-textarea');
+  const len=ta.value.length;
+  document.getElementById('essay-charcount').textContent=len+' merkkiä';
+  document.getElementById('essay-submit-btn').disabled=len<20;
+}
+function submitEssay(){
+  const text=document.getElementById('essay-textarea').value.trim();
+  if(text.length<20)return;
+  state.essayText=text;
+  state.essayDate=new Date().toLocaleDateString('fi-FI');
+  save();
+  document.getElementById('essay-write').classList.add('hidden');
+  document.getElementById('essay-done').classList.remove('hidden');
+  document.getElementById('essay-saved-text').textContent=text;
+}
+document.getElementById('essay-textarea').addEventListener('input',updateEssayCount);
+createStars();
+if(load()&&state.playerName){updateHeader();goToMap();}
+document.getElementById('name-input').addEventListener('keydown',e=>{if(e.key==='Enter')startNewGame();});
+document.getElementById('code-input').addEventListener('keydown',e=>{if(e.key==='Enter')resumeGame();});
+</script>
+</body>
+</html>
